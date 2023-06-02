@@ -2,48 +2,137 @@
 <html>
 <head>
     <title>venntojson</title>
-    <script>
-        // Get the canvas element
-        var canvas = document.getElementById('canvas');
-        var context = canvas.getContext('2d');
-
-        // Initialize drawing variables
-        var isDrawing = false;
-        var lastX = 0;
-        var lastY = 0;
-
-        // Event listeners for drawing
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-
-        function startDrawing(e) {
-            isDrawing = true;
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
+    <style>
+        #canvas-container {
+            position: relative;
         }
-
-        function draw(e) {
-            if (!isDrawing) return;
-            context.beginPath();
-            context.moveTo(lastX, lastY);
-            context.lineTo(e.offsetX, e.offsetY);
-            context.stroke();
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+        #shape-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 150px;
+            height: 150px;
+            background-color: lightgray;
+            padding: 10px;
         }
-
-        function stopDrawing() {
-            isDrawing = false;
+        .shape {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 5px;
+            cursor: move;
         }
-    </script>
+        #canvas {
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
     <header>
         <h1>Welcome to My Flask App</h1>
     </header>
-    <canvas id="canvas" width="500" height="500"></canvas>
+    <div id="canvas-container">
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <div id="shape-container">
+            <img class="shape" data-shape="square" src="{{ url_for('static', filename='images/square.svg') }}" alt="Square">
+            <img class="shape" data-shape="triangle" src="{{ url_for('static', filename='images/triangle.svg') }}" alt="Triangle">
+        </div>
+    </div>
+    <textarea id="jsonOutput"></textarea>
     <footer>
         <p>&copy; 2023 My Flask App. All rights reserved.</p>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var canvas = new fabric.Canvas('canvas', {
+                selection: false
+            });
+            var shapeContainer = document.getElementById('shape-container');
+            var jsonOutput = document.getElementById('jsonOutput');
+            var shapes = {
+                square: createSquare,
+                triangle: createTriangle
+            };
+            var draggedShape = null;
+
+            // Event listener for dragging shapes from the shape container
+            shapeContainer.addEventListener('mousedown', function(e) {
+                var target = e.target;
+                if (target.classList.contains('shape')) {
+                    var shapeType = target.getAttribute('data-shape');
+                    var offsetX = e.clientX - shapeContainer.getBoundingClientRect().left;
+                    var offsetY = e.clientY - shapeContainer.getBoundingClientRect().top;
+                    var shape = shapes[shapeType]();
+                    console.log(shape)
+                    //shape.left = offsetX;
+                    //shape.top = offsetY;
+                    //canvas.add(shape);
+                    draggedShape = shape;
+                    shapeContainer.style.cursor = 'move';
+                }
+            });
+
+            shapeContainer.addEventListener('mousemove', function(e) {
+                if (draggedShape) {
+                    var pointer = canvas.getPointer(e);
+                    var mouseX = pointer.x;
+                    var mouseY = pointer.y;
+                    console.log(mouseX, mouseY)
+                    //draggedShape.left = mouseX;
+                    //draggedShape.top = mouseY;
+                    draggedShape.originX = mouseX;
+                    draggedShape.originY = mouseY;
+                }
+            });
+
+            canvas.on("mouse:up", function(e) {
+                draggedShape = null;
+                console.log("mouseUp")
+            });
+
+            // Event listener for dragging shapes inside the canvas
+            canvas.on('object:moving', function(e) {
+                var shape = e.target;
+                if (shape === draggedShape) {
+                    shapeContainer.style.cursor = 'default';
+                    draggedShape = null;
+                }
+            });
+
+            // Event listener for updating JSON output
+            canvas.on('object:added', updateJsonOutput);
+            canvas.on('object:removed', updateJsonOutput);
+
+            function createSquare() {
+                return new fabric.Image.fromURL('{{ url_for('static', filename='images/square.svg') }}', function(img) {
+                    img.set({
+                        width: 50,
+                        height: 50,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                    canvas.add(img);
+                });
+            }
+
+            function createTriangle() {
+                return new fabric.Image.fromURL('{{ url_for('static', filename='images/triangle.svg') }}', function(img) {
+                    img.set({
+                        width: 50,
+                        height: 50,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                    canvas.add(img);
+                });
+            }
+
+            function updateJsonOutput() {
+                var objects = canvas.getObjects();
+                var json = JSON.stringify(objects);
+                jsonOutput.value = json;
+            }
+        });
+    </script>
 </body>
 </html>
