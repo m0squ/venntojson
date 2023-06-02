@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>venntojson</title>
+    <script>
+        // Get the canvas element
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        // Initialize drawing variables
+        var isDrawing = false;
+        var lastX = 0;
+        var lastY = 0;
+
+        // Event listeners for drawing
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            context.beginPath();
+            context.moveTo(lastX, lastY);
+            context.lineTo(e.offsetX, e.offsetY);
+            context.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Flask App</h1>
+    </header>
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <footer>
+        <p>&copy; 2023 My Flask App. All rights reserved.</p>
+    </footer>
+</body>
+</html>
